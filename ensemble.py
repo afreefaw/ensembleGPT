@@ -1,5 +1,6 @@
 import requests
 import json
+import logging
 
 API_KEY = open('apikey.txt', 'r').read()
 
@@ -59,11 +60,10 @@ def get_response(msgs):
       "messages": inp
     }
     response = requests.post(url, headers=headers, data=json.dumps(data))
-    # print(response.json())
     return response
 
 def get_msg(response):
-    '''Returns the message portion of of an API response'''
+    '''Returns the message portion of an API response'''
     if 'choices' in response.json().keys():
         return response.json()['choices'][0]['message']['content']
     else: return None
@@ -76,12 +76,13 @@ def get_msg(response):
 # --- Put your actor methods here ---
 
 def actor_basic(messages, full_text, me):
+    '''Simply respond to the text.'''
     inp = build_msg(full_text, 'assistant')
-    # print('test',inp)
-    response = get_response(inp)
-    # print(response)
-    me.response = get_msg(response)
+    logging.info(f"\n{me.name} sees: {full_text}\n") # Log what the actor sees
     
+    response = get_response(inp)
+    me.response = get_msg(response)
+    logging.info(f"\n{me.name} responds with: {me.response}\n") #log response
 
 
 
@@ -97,26 +98,21 @@ def actor_basic(messages, full_text, me):
 
 def main():
 
+    logging.basicConfig(filename='conversation.log', level=logging.INFO)
     # exit = False
-    team_goals = ('GOALS FOR THIS MEETING: Urgently produce 2 poems (in the next 20 minutes) on the theme of your play, which is about '
-    'hard times in english coal mines in the Thatcher era. When your goal is accomplished, end the meeting.')
+    team_goals = ('GOALS FOR THIS CHAT: Urgently produce 2 poems (ASAP) on the theme of '
+                  'hard times in english coal mines in the Thatcher era. When your goal is accomplished, restate the two final poems.')
     
-    actors = [actor(name='Krishna (Writer)',
-                    start_msg = ('IDENTITY:\nYou are Krishna, an artist/writer/creative professional. You are collaborative and cooperative.'
-                    'Your goal is to produce writing for your team, directly offering it in your response. You produce writing when asked. Your writings are beautiful,'
-                    ' enchanting, haunting, or otherwise evoke emotion in the reader. '
-                    'You obey your manager\'s instructions. ' + team_goals +\
+    actors = [actor(name='TASK MANAGER BOT',
+                    start_msg = ('IDENTITY:\n You are an ultra concise and efficient task managing chatbot. You keep the team on task. Your messages direct others to complete tasks, in a very clear and direct way. For example: Tom, show me a poem.' + team_goals +\
                     '\nEND OF IDENTITY'),
                     actions = [actor_basic],
-                    context_static = '\nProvide an effecient response below (which advances your goals).',
+                    context_static = '\nProvide an effecient response below (which advances team goals).',
                    ),
-             actor(name='Debra (Manager)',
-                    start_msg = ('IDENTITY:\nYou are Debra, the director/manager at a theatre '
-                   'company. You are concise and efficient.\n'
-                   'Your messages have the intent of delegating work, and providing feedback if required to reach your goal. You give'
-                   ' direct, clear instructions.' + team_goals + '\nEND OF IDENTITY'),
-                   actions = [actor_basic], 
-                   context_static = '\nProvide an effecient response below (which advances your goals).',
+             actor(name='POEM WRITER BOT',
+                    start_msg = ('IDENTITY:\n You are a poem writing bot. You recite poems when you are asked. Other than producing poems, you say almost nothing. Very concise and efficient. Your poems are beautiful, eloquent, varied, and evoke emotion in the reader.' + team_goals + '\nEND OF IDENTITY'),
+                   actions = [actor_basic],
+                   context_static = '\nProvide an effecient response below (which advances team goals).',
                   ),
              ]
     # convo_tokens = 0 # will want to track current context length
